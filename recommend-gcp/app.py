@@ -1,9 +1,13 @@
  
+import uvicorn
+from fastapi import FastAPI
 import pandas as pd
 import sklearn 
-
+import pickle
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+
+model = pickle.load(open("recommendation.pkl", 'rb'))
 
 df = pd.read_csv("ngo_details.csv")
 
@@ -23,8 +27,21 @@ def get_recommendations(name):
     sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
     sim_scores = sim_scores[1:6]
     ngo_indices = [i[0] for i in sim_scores]
-    print(sim_scores)
-    print(ngo_indices)
-    return titles.iloc[ngo_indices].values
+    return list(titles.iloc[ngo_indices].values)
 
-print(get_recommendations('DEV GOVIND GRAMIN VIKAS SANSTHAN'))
+def predicted(name):
+    return get_recommendations(name)
+
+app = FastAPI()
+
+@app.get('/')
+def index():
+    return " Hello!"
+
+@app.get('/post')
+def predict(ngo):
+    return predicted(ngo)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host = '127.0.0.1', port = 8000)
+
